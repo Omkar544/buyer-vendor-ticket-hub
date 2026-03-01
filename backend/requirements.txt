@@ -1,9 +1,6 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-psycopg2-binary
-python-jose[cryptography]
-passlib[bcrypt]
-python-multipart
-huggingface_hub
-python-dotenv
+django 
+django-crispy-forms 
+crispy-tailwind 
+huggingface_hub 
+python-dotenv 
+pillow 
