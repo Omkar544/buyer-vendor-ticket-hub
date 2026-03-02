@@ -1,0 +1,18 @@
+{% extends 'tickets/base.html' %}
+{% block content %}
+<div class="text-center py-20">
+    <h2 class="text-4xl font-extrabold text-slate-800 mb-4">Welcome to TicketHub Dashboard</h2>
+    <p class="text-lg text-gray-600 mb-8">The foundation is ready. Preparing React API integration...</p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div class="p-6 bg-blue-50 rounded-xl border border-blue-100">
+            <h3 class="font-bold text-blue-800">System Admin</h3>
+            <p class="text-sm text-blue-600">Manage all tickets and users via the Django Admin panel.</p>
+        </div>
+        <div class="p-6 bg-indigo-50 rounded-xl border border-indigo-100">
+            <h3 class="font-bold text-indigo-800">React Frontend</h3>
+            <p class="text-sm text-indigo-600">The modern UI for Buyers and Vendors is coming next.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
