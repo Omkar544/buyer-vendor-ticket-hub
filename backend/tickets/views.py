@@ -2,6 +2,20 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
+from rest_framework import viewsets  # Required for React API
+from .models import Ticket          # Imports your verified PostgreSQL model
+from .serializers import TicketSerializer # Converts models to JSON
+
+# --- REST API VIEWSET (For React Frontend) ---
+class TicketViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows tickets to be viewed or edited via JSON.
+    Provides: GET (list), POST (create), PUT (update), DELETE (remove).
+    """
+    queryset = Ticket.objects.all()
+    serializer_class = TicketSerializer
+
+# --- STANDARD HTML VIEWS ---
 
 def register(request):
     """

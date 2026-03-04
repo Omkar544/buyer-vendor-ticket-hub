@@ -1,5 +1,6 @@
 """
 Django settings for core project.
+Updated: March 3, 2026 - PostgreSQL, DRF, and Auth Fixes.
 """
 
 from pathlib import Path
@@ -23,11 +24,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tickets', # Your main application
+    
+    # Internal Apps
+    'tickets', 
+    
+    # Third-party Apps for React API
+    'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware', # Added for React communication
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -41,7 +49,6 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Added path so Django finds your 'tickets/templates' folder
         'DIRS': [BASE_DIR / 'tickets' / 'templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
@@ -56,11 +63,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database - SQLite is used for development efficiency
+# Database - PostgreSQL for Enterprise Reliability
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'buyer_vendor_hub',
+        'USER': 'postgres',
+        'PASSWORD': 'your_password_here', # Verified via test_db.py
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
 
@@ -83,7 +94,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- AUTHENTICATION REDIRECTS ---
-# These ensure users go to the dashboard after login
+# --- AUTHENTICATION SETTINGS ---
+# Fixes the 404 redirect to /accounts/login/
+LOGIN_URL = 'login' 
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+
+# --- CORS SETTINGS (Allows React to talk to Django) ---
+CORS_ALLOW_ALL_ORIGINS = True
