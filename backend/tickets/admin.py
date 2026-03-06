@@ -3,6 +3,5 @@ from .models import Ticket
 
 @admin.register(Ticket)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'buyer', 'status', 'priority', 'created_at')
-    list_filter = ('status', 'priority')
-    search_fields = ('title', 'description')
+    list_display = ('id', 'title', 'buyer_user', 'buyer_name', 'status', 'category')
+    list_filter = ('status', 'priority', 'category')
