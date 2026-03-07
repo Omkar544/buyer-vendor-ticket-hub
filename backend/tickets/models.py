@@ -24,7 +24,6 @@ class Ticket(models.Model):
         ('OTHER', 'Other'),
     ]
 
-    # Added granular subcategories as seen in enterprise systems
     SUBCATEGORY_CHOICES = [
         ('LDAP', 'LDAP / Authentication'),
         ('APP', 'Application Interface'),
@@ -48,9 +47,21 @@ class Ticket(models.Model):
     buyer_email = models.EmailField()
     buyer_phone = models.CharField(max_length=15, blank=True, null=True)
 
-    # --- RELATIONSHIPS ---
-    buyer_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='buyer_tickets')
-    assigned_vendor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='vendor_tickets')
+    # --- RELATIONSHIPS (Updated for Accountability) ---
+    # buyer_user is now MANDATORY (null=False) to enable history tracking
+    buyer_user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='buyer_tickets'
+    )
+    
+    assigned_vendor = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='vendor_tickets'
+    )
     
     # --- TIMESTAMPS ---
     created_at = models.DateTimeField(auto_now_add=True)

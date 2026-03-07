@@ -1,10 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
-from tickets import views as ticket_views
-from django.contrib.auth import views as auth_views
 from rest_framework.routers import DefaultRouter
+from tickets import views as ticket_views
+from tickets import auth_views as ticket_auth  # Import your new auth views
+from django.contrib.auth import views as auth_views
 
 # Initialize the REST Framework Router
+# Handles: GET (History/List), POST (Creation), PATCH (Status Updates)
 router = DefaultRouter()
 router.register(r'tickets', ticket_views.TicketViewSet, basename='ticket-api')
 
@@ -12,20 +14,18 @@ urlpatterns = [
     # --- Admin Panel ---
     path('admin/', admin.site.urls),
     
-    # --- REST API Endpoints (For React) ---
-    # This will expose your data at http://127.0.0.1:8000/api/tickets/
+    # --- REST API Endpoints (Primary for React) ---
     path('api/', include(router.urls)), 
     
-    # --- User Registration ---
-    path('register/', ticket_views.register, name='register'),
+    # --- Buyer Authentication (Identity Layer) ---
+    # These endpoints link your Auth.jsx to the PostgreSQL Data Tier
+    path('api/auth/register/', ticket_auth.register_view, name='api-register'),
+    path('api/auth/login/', ticket_auth.login_view, name='api-login'),
     
-    # --- Login & Logout ---
+    # --- Staff/Vendor Access (Web Interface) ---
     path('login/', auth_views.LoginView.as_view(template_name='tickets/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     
-    # --- System Dashboard (HTML Views) ---
-    path('dashboard/', ticket_views.dashboard, name='dashboard'),
-    
-    # --- Root URL ---
-    path('', ticket_views.dashboard, name='home'),
+    # --- Root URL Entry ---
+    path('', include(router.urls)),
 ]
