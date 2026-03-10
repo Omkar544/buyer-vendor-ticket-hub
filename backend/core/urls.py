@@ -2,30 +2,26 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from tickets import views as ticket_views
-from tickets import auth_views as ticket_auth  # Import your new auth views
-from django.contrib.auth import views as auth_views
+from tickets import auth_views as ticket_identity 
+from django.contrib.auth import views as django_staff_auth
+from django.views.generic.base import RedirectView
 
-# Initialize the REST Framework Router
-# Handles: GET (History/List), POST (Creation), PATCH (Status Updates)
 router = DefaultRouter()
 router.register(r'tickets', ticket_views.TicketViewSet, basename='ticket-api')
 
 urlpatterns = [
-    # --- Admin Panel ---
     path('admin/', admin.site.urls),
-    
-    # --- REST API Endpoints (Primary for React) ---
     path('api/', include(router.urls)), 
     
-    # --- Buyer Authentication (Identity Layer) ---
-    # These endpoints link your Auth.jsx to the PostgreSQL Data Tier
-    path('api/auth/register/', ticket_auth.register_view, name='api-register'),
-    path('api/auth/login/', ticket_auth.login_view, name='api-login'),
+    # --- BUYER API ROUTES ---
+    # We use 'register' as the name to satisfy internal Django template redirects
+    path('api/auth/register/', ticket_identity.register_view, name='register'),
+    path('api/auth/login/', ticket_identity.login_view, name='api-login'),
     
-    # --- Staff/Vendor Access (Web Interface) ---
-    path('login/', auth_views.LoginView.as_view(template_name='tickets/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    # --- STAFF PORTAL (Django Templates) ---
+    path('login/', django_staff_auth.LoginView.as_view(template_name='tickets/login.html'), name='login'),
+    path('logout/', django_staff_auth.LogoutView.as_view(next_page='login'), name='logout'),
     
-    # --- Root URL Entry ---
-    path('', include(router.urls)),
+    # Redirect empty home page to prevent 404
+    path('', RedirectView.as_view(url='login/', permanent=False)),
 ]

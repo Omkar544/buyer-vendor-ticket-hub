@@ -1,32 +1,57 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Send, X, PlusCircle, User, Building2, Phone, Mail, ShieldAlert, Briefcase, Tag } from 'lucide-react';
+import { Send, X, PlusCircle, Building2, ShieldAlert, UserCheck, Smartphone, Mail, CheckCircle2 } from 'lucide-react';
 
 export default function CreateTicket({ onTicketAdded }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const savedUsername = localStorage.getItem('username') || 'Guest';
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'TECHNICAL', // Initial selection for the dropdown
-    subcategory: 'APP',
+    category: 'TECHNICAL',
     priority: 'LOW',
     company: 'YBL',
-    classification: 'Service Request',
-    buyer_name: '',
-    buyer_email: '',
-    buyer_phone: '',
-    buyer_user: 1 
+    buyer_name: savedUsername,
+    buyer_email: '', 
+    buyer_phone: ''
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert("Session expired. Please log in again.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
-      await axios.post('http://127.0.0.1:8000/api/tickets/', formData);
-      setIsOpen(false);
-      onTicketAdded(); // Refresh grid
+      // POST request to Django API
+      const response = await axios.post('http://127.0.0.1:8000/api/tickets/', formData, {
+        headers: { 
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      // SUCCESS: If backend returns 201, clear form and notify Manish
+      if (response.status === 201) {
+        alert("Ticket Created Successfully!"); 
+        setIsOpen(false);
+        onTicketAdded(); // Refresh history list
+      }
     } catch (err) {
-      console.error("Submission Error:", err.response?.data);
-      alert("Please fill all required dropdown fields.");
+      console.error("Submission Error Details:", err.response?.data);
+      
+      // Logic to handle specific error types
+      const errorMsg = err.response?.data?.detail || "System synchronization error. Please try again.";
+      alert(errorMsg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -38,117 +63,86 @@ export default function CreateTicket({ onTicketAdded }) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-300">
         
         <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
-          <h2 className="text-2xl font-black text-slate-900">New Service Ticket</h2>
+          <div className="flex items-center gap-3">
+            <UserCheck className="text-blue-600" />
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">New Service Request</h2>
+          </div>
           <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* Section 1: Standard Inputs */}
+        <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto text-slate-800">
+          <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
+             <div className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Authenticated Buyer</div>
+             <div className="text-xs font-bold text-slate-700">{savedUsername}</div>
+          </div>
+
           <div className="space-y-4">
             <input 
-              type="text" placeholder="Ticket Title" required
-              className="w-full p-4 bg-slate-50 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+              type="text" placeholder="Subject Title (e.g., Database Timeout)" required
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
               onChange={(e) => setFormData({...formData, title: e.target.value})}
             />
             <textarea 
-              placeholder="Describe the issue..." required
-              className="w-full p-4 bg-slate-50 border rounded-xl h-24 outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Detailed description of the technical issue..." required
+              className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl h-32 outline-none focus:ring-2 focus:ring-blue-500"
               onChange={(e) => setFormData({...formData, description: e.target.value})}
             />
           </div>
 
-          {/* Section 2: The Dropdown Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            {/* Company Selection */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Company</label>
-              <div className="relative">
-                <Building2 size={16} className="absolute left-3 top-3.5 text-slate-400" />
-                <select 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-semibold text-slate-700 outline-none"
-                  value={formData.company}
-                  onChange={(e) => setFormData({...formData, company: e.target.value})}
-                >
-                  <option value="YBL">Yes Bank (YBL)</option>
-                  <option value="HDFC">HDFC Bank</option>
-                  <option value="ICICI">ICICI Bank</option>
-                </select>
-              </div>
+               <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Mail size={10}/> Contact Email</label>
+               <input 
+                type="email" placeholder="manish.chavan@example.com" required
+                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setFormData({...formData, buyer_email: e.target.value})}
+              />
             </div>
-
-            {/* Classification Selection */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Classification</label>
-              <div className="relative">
-                <Briefcase size={16} className="absolute left-3 top-3.5 text-slate-400" />
-                <select 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-semibold text-slate-700 outline-none"
-                  value={formData.classification}
-                  onChange={(e) => setFormData({...formData, classification: e.target.value})}
-                >
-                  <option value="Service Request">Service Request</option>
-                  <option value="Enhancement">Enhancement</option>
-                  <option value="Bug Fix">Bug Fix</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Category Selection */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Team Category</label>
-              <div className="relative">
-                <Tag size={16} className="absolute left-3 top-3.5 text-slate-400" />
-                <select 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-semibold text-slate-700 outline-none"
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                >
-                  <option value="TECHNICAL">Technical Team</option>
-                  <option value="HARDWARE">Hardware Team</option>
-                  <option value="BILLING">Billing Team</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Priority Selection */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Priority Level</label>
-              <div className="relative">
-                <ShieldAlert size={16} className="absolute left-3 top-3.5 text-slate-400" />
-                <select 
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-semibold text-slate-700 outline-none"
-                  value={formData.priority}
-                  onChange={(e) => setFormData({...formData, priority: e.target.value})}
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="CRITICAL">Critical</option>
-                </select>
-              </div>
+               <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Smartphone size={10}/> Phone</label>
+               <input 
+                type="text" placeholder="Mobile Number"
+                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setFormData({...formData, buyer_phone: e.target.value})}
+              />
             </div>
           </div>
 
-          {/* Section 3: Contact Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <input 
-              type="text" placeholder="Your Name" required
-              className="w-full p-3 bg-slate-50 border rounded-xl outline-none"
-              onChange={(e) => setFormData({...formData, buyer_name: e.target.value})}
-            />
-            <input 
-              type="email" placeholder="Email Address" required
-              className="w-full p-3 bg-slate-50 border rounded-xl outline-none"
-              onChange={(e) => setFormData({...formData, buyer_email: e.target.value})}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Team Assignment</label>
+              <select 
+                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold text-slate-700"
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+              >
+                <option value="TECHNICAL">Technical Team</option>
+                <option value="BILLING">Billing Team</option>
+                <option value="HARDWARE">Hardware Team</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Urgency Level</label>
+              <select 
+                className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold text-slate-700"
+                onChange={(e) => setFormData({...formData, priority: e.target.value})}
+              >
+                <option value="LOW">Low (SLA: 10 Days)</option>
+                <option value="MEDIUM">Medium (SLA: 5 Days)</option>
+                <option value="HIGH">High (SLA: 2 Days)</option>
+              </select>
+            </div>
           </div>
 
-          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
-            <Send size={18} /> Register Ticket
+          <button 
+            type="submit" 
+            disabled={isSubmitting}
+            className={`w-full ${isSubmitting ? 'bg-slate-400' : 'bg-blue-600 hover:bg-slate-900'} text-white font-black py-5 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-4`}
+          >
+            {isSubmitting ? 'Processing...' : <><Send size={18} /> Submit Ticket</>}
           </button>
         </form>
       </div>

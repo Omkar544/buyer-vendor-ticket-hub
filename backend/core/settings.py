@@ -1,6 +1,6 @@
 """
 Django settings for core project.
-Updated: March 3, 2026 - PostgreSQL, DRF, and Auth Fixes.
+Updated: March 7, 2026 - PostgreSQL, DRF, and Auth Fixes.
 """
 
 from pathlib import Path
@@ -30,12 +30,13 @@ INSTALLED_APPS = [
     
     # Third-party Apps for React API
     'rest_framework',
+    'rest_framework.authtoken', # REQUIRED: Creates the token table in PostgreSQL
     'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # MUST be at the top for React safety
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # Added for React communication
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -69,7 +70,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'buyer_vendor_hub',
         'USER': 'postgres',
-        'PASSWORD': 'your_password_here', # Verified via test_db.py
+        'PASSWORD': 'your_password_here', # Ensure this matches your pgAdmin password
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }
@@ -94,11 +95,19 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# --- REST FRAMEWORK CONFIGURATION ---
+# This allows Django to recognize the "Token" header from React
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+
 # --- AUTHENTICATION SETTINGS ---
-# Fixes the 404 redirect to /accounts/login/
+# Fixes redirects for the Staff Portal
 LOGIN_URL = 'login' 
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# --- CORS SETTINGS (Allows React to talk to Django) ---
+# --- CORS SETTINGS (Allows React on 5173 to talk to Django on 8000)
 CORS_ALLOW_ALL_ORIGINS = True
