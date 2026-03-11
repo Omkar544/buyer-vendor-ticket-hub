@@ -1,5 +1,5 @@
 import matplotlib
-# CRITICAL: Force non-interactive backend to fix the 'tkinter' / GUI errors
+# CRITICAL: Force non-interactive backend for server-side generation
 matplotlib.use('Agg') 
 
 import matplotlib.pyplot as plt
@@ -10,15 +10,15 @@ import os
 
 def generate_ticket_report():
     """
-    Fetches real-time ticket data from PostgreSQL and generates 
-    Seaborn visualizations for the Admin Dashboard.
+    Fetches real-time ticket data from PostgreSQL and generates:
+    1. Global Count Plot (daily_analytics.png)
+    2. Department-specific Pie Charts (technical_priority.png, etc.)
     """
     try:
-        # 1. Connect using SQLAlchemy (Preferred by Pandas for PostgreSQL)
-        # Format: postgresql://username:password@host:port/database
+        # 1. Database Connection
         engine = create_engine('postgresql://postgres:your_password_here@127.0.0.1:5432/buyer_vendor_hub')
         
-        # 2. Query data for the Vendor teams
+        # 2. Fetch Data
         query = "SELECT category, status, priority FROM tickets_ticket"
         df = pd.read_sql_query(query, engine)
 
@@ -26,39 +26,58 @@ def generate_ticket_report():
             print("No data found in PostgreSQL to analyze.")
             return
 
-        # 3. Configure Seaborn theme for Professional Analytics
+        # 3. Setup Export Directory
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        report_dir = os.path.join(base_dir, 'frontend', 'public', 'reports')
+        if not os.path.exists(report_dir):
+            os.makedirs(report_dir)
+
+        # --- GENERATE GLOBAL BAR CHART ---
         sns.set_theme(style="whitegrid", palette="muted")
         plt.figure(figsize=(12, 7))
-
-        # 4. Create Count Plot: Team Workload vs. Resolution Status
-        # Shows OPEN vs. RESOLVED tickets for Tech, Billing, and Hardware
-        ax = sns.countplot(
+        sns.countplot(
             data=df, 
             x='category', 
             hue='status', 
             order=['TECHNICAL', 'HARDWARE', 'BILLING']
         )
-        
         plt.title('Vendor Performance & Resolution Distribution', fontsize=18, fontweight='bold', pad=25)
-        plt.xlabel('Vendor Department', fontsize=13, fontweight='bold')
-        plt.ylabel('Total Tickets', fontsize=13, fontweight='bold')
-        plt.legend(title='Ticket Status', loc='upper right')
+        plt.savefig(os.path.join(report_dir, 'daily_analytics.png'), bbox_inches='tight', dpi=300)
+        plt.close()
 
-        # 5. Export Graph to React Public folder for instant UI update
-        # Paths are calculated relative to this file's position
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        report_dir = os.path.join(base_dir, 'frontend', 'public', 'reports')
+        # --- GENERATE DEPARTMENT PIE CHARTS ---
+        departments = ['TECHNICAL', 'BILLING', 'HARDWARE']
         
-        if not os.path.exists(report_dir):
-            os.makedirs(report_dir)
+        for dept in departments:
+            dept_df = df[df['category'] == dept]
+            
+            if not dept_df.empty:
+                plt.figure(figsize=(8, 8))
+                
+                # Count priorities and plot
+                priority_counts = dept_df['priority'].value_counts()
+                
+                # Professional color palette for High, Medium, Low
+                colors = sns.color_palette('pastel')[0:len(priority_counts)]
+                
+                plt.pie(
+                    priority_counts, 
+                    labels=priority_counts.index, 
+                    autopct='%1.1f%%', 
+                    startangle=140, 
+                    colors=colors,
+                    wedgeprops={'edgecolor': 'white', 'linewidth': 2}
+                )
+                
+                plt.title(f'{dept} Priority Distribution', fontsize=16, fontweight='bold')
+                
+                # Save specifically for the department frontend view
+                pie_path = os.path.join(report_dir, f'{dept.lower()}_priority.png')
+                plt.savefig(pie_path, bbox_inches='tight', dpi=300)
+                plt.close()
+                print(f"Generated: {pie_path}")
 
-        report_path = os.path.join(report_dir, 'daily_analytics.png')
-        
-        # Save without triggering any GUI windows
-        plt.savefig(report_path, bbox_inches='tight', dpi=300)
-        plt.close() # Free up memory
-        
-        print(f"Success: PostgreSQL Analytics exported to {report_path}")
+        print(f"Success: All PostgreSQL Analytics exported to {report_dir}")
 
     except Exception as e:
         print(f"Analytics Engine Error: {str(e)}")
