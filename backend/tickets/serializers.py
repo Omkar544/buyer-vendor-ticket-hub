@@ -22,18 +22,20 @@ class TicketSerializer(serializers.ModelSerializer):
             'company',
             'buyer_name', 
             'buyer_email',
+            'buyer_phone',
+            'issue_proof',      # NEW: Field for buyer's attachment
+            'resolution_proof', # NEW: Field for vendor's attachment
             'resolution_notes', 
             'due_date',         
             'resolved_at',      
             'created_at'
         ]
-        # CRITICAL FIX: Ensure buyer_user is read_only to prevent 'Identity Mismatch'
-        # We also make buyer_name/email read_only so they don't conflict with session data
+        
+        # We REMOVED 'buyer_email' and 'buyer_name' from here 
+        # so your frontend can successfully post them.
         read_only_fields = [
             'buyer_user', 
             'due_date', 
             'resolved_at', 
             'status',
-            'buyer_name',
-            'buyer_email'
         ]

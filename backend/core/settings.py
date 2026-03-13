@@ -1,22 +1,21 @@
 """
 Django settings for core project.
-Updated: March 7, 2026 - PostgreSQL, DRF, and Auth Fixes.
+Updated: March 13, 2026 - Final Path Resolution for Static & Media.
 """
 
+import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# BASE_DIR is: D:\ticket-buyer-vendor-system\backend
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# PROJECT_ROOT is: D:\ticket-buyer-vendor-system
+PROJECT_ROOT = BASE_DIR.parent
+
 SECRET_KEY = 'django-insecure-d!(oza1!@-e93t%er))862$ke$#4p3ny=!@9z-t3@rlq6p1l70'
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
 ALLOWED_HOSTS = []
 
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -24,18 +23,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Internal Apps
     'tickets', 
-    
-    # Third-party Apps for React API
     'rest_framework',
-    'rest_framework.authtoken', # REQUIRED: Creates the token table in PostgreSQL
+    'rest_framework.authtoken', 
     'corsheaders',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # MUST be at the top for React safety
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -64,19 +59,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database - PostgreSQL for Enterprise Reliability
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'buyer_vendor_hub',
         'USER': 'postgres',
-        'PASSWORD': 'your_password_here', # Ensure this matches your pgAdmin password
+        'PASSWORD': 'your_password_here', 
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }
 }
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
@@ -84,30 +77,34 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+# --- STATIC FILES (Analytics Charts) ---
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(PROJECT_ROOT, "static"), 
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
+
+# --- MEDIA FILES (Uploaded Proofs) ---
+MEDIA_URL = '/media/'
+# This ensures Django finds files in D:\ticket-buyer-vendor-system\media\
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- REST FRAMEWORK CONFIGURATION ---
-# This allows Django to recognize the "Token" header from React
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
 
-# --- AUTHENTICATION SETTINGS ---
-# Fixes redirects for the Staff Portal
 LOGIN_URL = 'login' 
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# --- CORS SETTINGS (Allows React on 5173 to talk to Django on 8000)
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
