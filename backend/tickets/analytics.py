@@ -10,16 +10,15 @@ import os
 
 def generate_ticket_report():
     """
-    Fetches real-time ticket data from PostgreSQL and generates:
-    1. Global Status Bar Chart (global_analytics.png)
-    2. Admin Global Distribution Pie Chart (admin_pie.png)
-    3. Dynamic Vendor-specific Priority Charts
+    Fetches real-time ticket data from PostgreSQL and generates sanitized PNG reports.
+    Matches the frontend logic to fix 404 and SuspiciousFileOperation errors.
     """
     try:
-        # 1. Database Connection (Updated to match your project DB name)
+        # 1. Database Connection (Ensure password is correct)
+        # Format: postgresql://username:password@host:port/database
         engine = create_engine('postgresql://postgres:your_password_here@127.0.0.1:5432/buyer_vendor_hub')
         
-        # 2. Fetch Data (Updated to JOIN with the new Category table)
+        # 2. Fetch Data with Category Join
         query = """
             SELECT t.priority, t.status, c.name as category_name 
             FROM tickets_ticket t
@@ -28,26 +27,32 @@ def generate_ticket_report():
         df = pd.read_sql_query(query, engine)
 
         if df.empty:
-            print("No data found in PostgreSQL to analyze.")
+            print("⚠️ No data found in PostgreSQL to analyze.")
             return
 
-        # 3. Setup Export Directory (Points to Django Static for Admin/Vendor access)
-        # Using static folder ensures files are served correctly via the URL we added
+        # 3. Setup Export Directory (D:\ticket-buyer-vendor-system\static\reports)
+        # This relative pathing ensures it works regardless of where the script sits in the backend
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         report_dir = os.path.join(base_dir, 'static', 'reports')
+        
         if not os.path.exists(report_dir):
             os.makedirs(report_dir)
+            print(f"📁 Created directory: {report_dir}")
 
+        # Set professional styling
         sns.set_theme(style="whitegrid", palette="muted")
 
-        # --- A. ADMIN: GLOBAL BAR CHART (Status per Team) ---
+        # --- A. ADMIN: GLOBAL BAR CHART ---
         plt.figure(figsize=(12, 7))
         sns.countplot(data=df, x='category_name', hue='status', palette='viridis')
         plt.title('Global Ticket Status Distribution', fontsize=18, fontweight='bold', pad=25)
+        plt.xlabel('Department / Agent', fontsize=12)
+        plt.ylabel('Ticket Count', fontsize=12)
         plt.savefig(os.path.join(report_dir, 'global_analytics.png'), bbox_inches='tight', dpi=300)
         plt.close()
+        print("✅ Generated: global_analytics.png")
 
-        # --- B. ADMIN: GLOBAL CATEGORY PIE CHART (Workload Share) ---
+        # --- B. ADMIN: GLOBAL WORKLOAD PIE CHART ---
         plt.figure(figsize=(8, 8))
         cat_counts = df['category_name'].value_counts()
         plt.pie(cat_counts, labels=cat_counts.index, autopct='%1.1f%%', 
@@ -56,16 +61,15 @@ def generate_ticket_report():
         plt.title('Admin Overview: Total Workload Share', fontsize=16, fontweight='bold')
         plt.savefig(os.path.join(report_dir, 'admin_pie.png'), bbox_inches='tight', dpi=300)
         plt.close()
+        print("✅ Generated: admin_pie.png")
 
-        # --- C. DYNAMIC VENDOR CHARTS (Generates for every registered team) ---
-        # No more hardcoded lists! It finds every team in your DB.
+        # --- C. DYNAMIC SANITIZED VENDOR CHARTS ---
         unique_teams = df['category_name'].unique()
         
         for team in unique_teams:
             dept_df = df[df['category_name'] == team]
             
             if not dept_df.empty:
-                # Priority Pie Chart for Vendor Dashboard
                 plt.figure(figsize=(8, 8))
                 priority_counts = dept_df['priority'].value_counts()
                 
@@ -78,17 +82,22 @@ def generate_ticket_report():
                     wedgeprops={'edgecolor': 'white', 'linewidth': 2}
                 )
                 
-                plt.title(f'{team} Team Priority Load', fontsize=16, fontweight='bold')
+                plt.title(f'{team} Priority Distribution', fontsize=16, fontweight='bold')
                 
-                # Save as 'technical_priority.png', 'billing_priority.png', etc.
-                file_name = f"{team.lower()}_priority.png"
+                # --- MATCHING FRONTEND SANITIZATION ---
+                # Example: "Agent: Sanjay_k" -> "sanjay_k_priority.png"
+                # Example: "Technical" -> "technical_priority.png"
+                safe_name = team.lower().replace('agent:', '').strip().replace(' ', '_')
+                file_name = f"{safe_name}_priority.png"
+                
                 plt.savefig(os.path.join(report_dir, file_name), bbox_inches='tight', dpi=300)
                 plt.close()
+                print(f"✅ Generated: {file_name}")
 
-        print(f"Success: Analytics exported to {report_dir}")
+        print(f"\n🚀 Success: All analytics exported to {report_dir}")
 
     except Exception as e:
-        print(f"Analytics Engine Error: {str(e)}")
+        print(f"❌ Analytics Engine Error: {str(e)}")
 
 if __name__ == "__main__":
     generate_ticket_report()

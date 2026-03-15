@@ -1,6 +1,6 @@
 """
 Django settings for core project.
-Updated: March 13, 2026 - Final Path Resolution for Static & Media.
+Updated: March 15, 2026 - Integrated Real-Time Email System (TicketHub Pro).
 """
 
 import os
@@ -70,6 +70,14 @@ DATABASES = {
     }
 }
 
+# --- REAL-TIME EMAIL SYSTEM CONFIGURATION (Requirement #6) ---
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'tickethubpro@gmail.com'
+EMAIL_HOST_PASSWORD = 'Happy_omkar544' 
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
@@ -91,7 +99,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # --- MEDIA FILES (Uploaded Proofs) ---
 MEDIA_URL = '/media/'
-# This ensures Django finds files in D:\ticket-buyer-vendor-system\media\
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

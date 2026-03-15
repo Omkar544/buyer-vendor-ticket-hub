@@ -13,6 +13,7 @@ from .analytics import generate_ticket_report
 def register_vendor(request):
     """
     Creates a User and a Category named specifically after the Vendor's username.
+    Also triggers an initial report generation for the new vendor.
     """
     data = request.data
     try:
@@ -25,7 +26,6 @@ def register_vendor(request):
         )
         
         # 2. CREATE CATEGORY BASED ON USERNAME (Personalized Category)
-        # This makes the vendor's username appear in the Buyer's dropdown
         category_name = f"Agent: {user.username.capitalize()}"
         category_obj, created = TicketCategory.objects.get_or_create(
             name=category_name
@@ -34,6 +34,12 @@ def register_vendor(request):
         # 3. Link Vendor to their specific category
         VendorProfile.objects.create(user=user, category=category_obj)
         
+        # Trigger initial report to create the first PNG for this vendor
+        try:
+            generate_ticket_report()
+        except:
+            pass
+
         return Response({
             'message': f'Vendor {user.username} registered. Category "{category_name}" created.'
         }, status=status.HTTP_201_CREATED)
@@ -56,30 +62,41 @@ class TicketViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """
+        ROLE-BASED DATA ISOLATION:
+        1. Admin: Sees all tickets for global analysis.
+        2. Vendor: Sees only tickets in their department/category.
+        3. Buyer: Sees only their own created tickets.
+        """
         user = self.request.user
         queryset = Ticket.objects.all()
 
-        # 1. ADMIN (Superuser): Sees every ticket across all vendors
         if user.is_superuser:
             return queryset.order_by('-created_at')
 
-        # 2. VENDOR: Sees only tickets assigned specifically to their name (category)
         if hasattr(user, 'vendor_profile'):
             vendor_category = user.vendor_profile.category
             return queryset.filter(category=vendor_category).order_by('-priority', 'due_date')
 
-        # 3. BUYER: Sees only tickets they raised
         return queryset.filter(buyer_user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
+        """
+        Saves the ticket and triggers a global report update.
+        """
         serializer.save(buyer_user=self.request.user)
         try:
+            # Updates both Admin global charts and Vendor specific priority charts
             generate_ticket_report()
         except:
             pass
 
     @action(detail=True, methods=['post'])
     def resolve_ticket(self, request, pk=None):
+        """
+        Vendor action to mark ticket as resolved. 
+        Triggers report regeneration so the Vendor's dashboard chart reflects the change immediately.
+        """
         ticket = self.get_object()
         notes = request.data.get('resolution_notes')
         res_proof = request.FILES.get('resolution_proof')
@@ -94,9 +111,10 @@ class TicketViewSet(viewsets.ModelViewSet):
         ticket.resolved_at = timezone.now()
         ticket.save()
 
+        # Update analytics after resolution
         try:
             generate_ticket_report()
         except:
             pass
             
-        return Response({'message': 'Ticket resolved with proof saved.'})
+        return Response({'message': 'Ticket resolved. Dashboard analytics updated.'})

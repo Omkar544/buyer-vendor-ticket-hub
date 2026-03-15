@@ -5,7 +5,7 @@ from datetime import timedelta
 
 # 1. NEW: Dynamic Category Model
 # When a vendor registers, their team name is added here.
-# This ensures the Buyer's dropdown is always in sync with available vendors.
+
 class TicketCategory(models.Model):
     name = models.CharField(max_length=100, unique=True) # e.g., TECHNICAL, LOGISTICS
     created_at = models.DateTimeField(auto_now_add=True)

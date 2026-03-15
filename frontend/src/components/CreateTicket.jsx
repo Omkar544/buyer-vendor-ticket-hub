@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Send, X, PlusCircle, UserCheck, Smartphone, Mail, CheckCircle2, Upload, FileText, Paperclip } from 'lucide-react';
+import { 
+  Send, X, PlusCircle, UserCheck, Smartphone, Mail, CheckCircle2, 
+  Upload, FileText, Paperclip, AlertCircle, Building2, User 
+} from 'lucide-react';
 
 export default function CreateTicket({ onTicketAdded }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +14,6 @@ export default function CreateTicket({ onTicketAdded }) {
   
   const savedUsername = localStorage.getItem('username') || 'Guest';
 
-  // --- Initial state pulls from localStorage for Auto-Fill ---
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -23,10 +25,8 @@ export default function CreateTicket({ onTicketAdded }) {
     buyer_phone: localStorage.getItem('phone') || ''
   });
 
-  // --- Sync state and Fetch Agents (Categories) ---
   useEffect(() => {
     if (isOpen) {
-      // Sync personal info from localStorage
       setFormData(prev => ({
         ...prev,
         buyer_email: localStorage.getItem('email') || prev.buyer_email,
@@ -35,12 +35,10 @@ export default function CreateTicket({ onTicketAdded }) {
         buyer_name: localStorage.getItem('name') || prev.buyer_name,
       }));
 
-      // Fetch the Vendor Agents from your new get_categories view
       const fetchCategories = async () => {
         try {
           const response = await axios.get('http://127.0.0.1:8000/api/get-categories/');
           setCategories(response.data);
-          // Auto-select the first available agent
           if (response.data.length > 0) {
             setFormData(prev => ({ ...prev, category: response.data[0].id }));
           }
@@ -55,27 +53,12 @@ export default function CreateTicket({ onTicketAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-
-    if (!token) {
-      alert("Session expired. Please log in again.");
-      return;
-    }
+    if (!token) return alert("Session expired.");
 
     setIsSubmitting(true);
-
     const uploadData = new FormData();
-    uploadData.append('title', formData.title);
-    uploadData.append('description', formData.description);
-    uploadData.append('category', formData.category);
-    uploadData.append('priority', formData.priority);
-    uploadData.append('company', formData.company);
-    uploadData.append('buyer_name', formData.buyer_name);
-    uploadData.append('buyer_email', formData.buyer_email);
-    uploadData.append('buyer_phone', formData.buyer_phone);
-    
-    if (selectedFile) {
-      uploadData.append('issue_proof', selectedFile);
-    }
+    Object.keys(formData).forEach(key => uploadData.append(key, formData[key]));
+    if (selectedFile) uploadData.append('issue_proof', selectedFile);
 
     try {
       const response = await axios.post('http://127.0.0.1:8000/api/tickets/', uploadData, {
@@ -91,169 +74,149 @@ export default function CreateTicket({ onTicketAdded }) {
           setIsOpen(false);
           setIsSuccess(false);
           setSelectedFile(null);
-          setFormData(prev => ({...prev, title: '', description: ''})); // Reset only ticket content
+          setFormData(prev => ({...prev, title: '', description: ''}));
           onTicketAdded();
         }, 1800);
       }
     } catch (err) {
-      alert("Submission failed. Check your connection.");
+      alert("Submission failed.");
     } finally {
       if (!isSuccess) setIsSubmitting(false);
     }
   };
 
   if (!isOpen) return (
-    <button onClick={() => setIsOpen(true)} className="fixed bottom-10 right-10 bg-blue-600 text-white p-5 rounded-full shadow-2xl hover:scale-110 hover:bg-slate-900 transition-all z-40 group">
-      <div className="flex items-center gap-2">
-         <PlusCircle size={28} />
-         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 font-black uppercase text-[10px] tracking-widest">New Ticket</span>
-      </div>
+    <button onClick={() => setIsOpen(true)} className="fixed bottom-10 right-10 bg-blue-600 text-white p-6 rounded-[2rem] shadow-2xl hover:scale-110 hover:bg-slate-900 transition-all z-40 group flex items-center gap-3">
+      <PlusCircle size={28} strokeWidth={2.5}/>
+      <span className="font-black uppercase text-xs tracking-widest hidden group-hover:block transition-all duration-300">New Request</span>
     </button>
   );
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-300">
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-[3rem] w-full max-w-4xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-300">
         
         {/* Header */}
-        <div className="bg-slate-50 px-8 py-6 border-b flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-xl text-white">
-               <UserCheck size={20} />
+        <div className="bg-white px-10 py-8 border-b border-slate-100 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-600 p-3 rounded-2xl text-white shadow-lg shadow-blue-100">
+               <UserCheck size={24} />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Direct Agent Request</h2>
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Dispatch Request</h2>
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Enterprise Routing Engine v3.0</p>
+            </div>
           </div>
-          <button onClick={() => setIsOpen(false)} className="bg-slate-200 p-2 rounded-full text-slate-500 hover:bg-red-100 hover:text-red-600 transition-colors"><X size={20}/></button>
+          <button onClick={() => setIsOpen(false)} className="bg-slate-100 p-3 rounded-2xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"><X size={20}/></button>
         </div>
 
         {isSuccess ? (
-          <div className="p-20 flex flex-col items-center justify-center text-center space-y-4 animate-in zoom-in">
-            <div className="bg-emerald-100 p-4 rounded-full text-emerald-600">
-              <CheckCircle2 size={60} />
+          <div className="p-32 flex flex-col items-center justify-center text-center space-y-6 animate-in zoom-in">
+            <div className="bg-emerald-500 p-6 rounded-[2.5rem] text-white shadow-2xl shadow-emerald-100">
+              <CheckCircle2 size={80} />
             </div>
-            <h3 className="text-2xl font-black text-slate-900">Ticket Dispatched!</h3>
-            <p className="text-slate-500 font-medium tracking-tight">Your selected agent has been notified.</p>
+            <div className="space-y-2">
+              <h3 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Synchronized!</h3>
+              <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Agent notified via secure pipeline.</p>
+            </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[75vh] overflow-y-auto text-slate-800">
+          <form onSubmit={handleSubmit} className="p-10 grid grid-cols-1 lg:grid-cols-2 gap-10 max-h-[80vh] overflow-y-auto">
             
-            {/* Identity Banner */}
-            <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
-               <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <div className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Logged Identity</div>
-               </div>
-               <div className="text-xs font-bold text-slate-700">{formData.buyer_name} ({formData.company})</div>
-            </div>
-
-            {/* Title & Description */}
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Issue Subject</label>
+            {/* LEFT COLUMN: Issue Data */}
+            <div className="space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
                 <input 
-                  type="text" placeholder="Briefly describe the problem..." required
-                  value={formData.title}
-                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                  type="text" placeholder="Issue title..." required
+                  className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-blue-100 font-bold text-slate-800 transition-all"
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Description</label>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Documentation</label>
                 <textarea 
-                  placeholder="Tell us more about what's happening..." required
-                  value={formData.description}
-                  className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl h-28 outline-none focus:ring-2 focus:ring-blue-500 text-sm leading-relaxed"
+                  placeholder="Provide technical context..." required
+                  className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] h-48 outline-none focus:ring-4 focus:ring-blue-100 text-sm leading-relaxed transition-all resize-none"
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
               </div>
-            </div>
 
-            {/* File Upload */}
-            <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1">
-                  <Paperclip size={10}/> Attachment (Proof)
-                </label>
-                <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-6 flex items-center justify-center bg-slate-50 hover:bg-blue-50 hover:border-blue-200 transition-all group">
-                  <input 
-                    type="file"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                  />
-                  <div className="flex flex-col items-center gap-2 text-slate-400 group-hover:text-blue-500 transition-colors">
-                    {selectedFile ? (
-                      <div className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl">
-                        <FileText size={18}/> 
-                        <span className="text-xs font-bold">{selectedFile.name}</span>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload size={24}/> 
-                        <span className="text-xs font-bold uppercase tracking-wider">Drag or Click to Upload</span>
-                      </>
-                    )}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Attachment</label>
+                <div className="relative group">
+                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => setSelectedFile(e.target.files[0])} />
+                  <div className={`p-5 rounded-[1.5rem] border-2 border-dashed flex items-center gap-4 transition-all ${selectedFile ? 'bg-blue-50 border-blue-400' : 'bg-slate-50 border-slate-200 group-hover:border-blue-300'}`}>
+                    <div className={`${selectedFile ? 'bg-blue-600' : 'bg-slate-200'} p-3 rounded-xl text-white transition-colors`}>
+                       {selectedFile ? <FileText size={20}/> : <Upload size={20}/>}
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-500 truncate">
+                      {selectedFile ? selectedFile.name : 'Upload Proof (PNG/JPG)'}
+                    </span>
                   </div>
                 </div>
-            </div>
-
-            {/* Contact Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1"><Mail size={10}/> Contact Email</label>
-                 <input 
-                  type="email" required
-                  value={formData.buyer_email}
-                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => setFormData({...formData, buyer_email: e.target.value})}
-                />
-              </div>
-              <div className="space-y-1">
-                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1 flex items-center gap-1"><Smartphone size={10}/> Mobile Number</label>
-                 <input 
-                  type="text"
-                  value={formData.buyer_phone}
-                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => setFormData({...formData, buyer_phone: e.target.value})}
-                />
               </div>
             </div>
 
-            {/* Agent & Urgency Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Target Agent</label>
-                <select 
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                >
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
+            {/* RIGHT COLUMN: Metadata & Config */}
+            <div className="space-y-6">
+              <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] space-y-4 shadow-xl">
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">Authenticated Identity</h4>
+                 <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-sm font-bold"><User size={18} className="text-blue-500"/> {formData.buyer_name}</div>
+                    <div className="flex items-center gap-3 text-sm font-bold"><Building2 size={18} className="text-blue-500"/> {formData.company}</div>
+                 </div>
+                 <div className="pt-4 border-t border-white/10 flex items-center gap-2 text-blue-400">
+                    <AlertCircle size={14}/>
+                    <span className="text-[9px] font-black uppercase tracking-widest">Metadata Locked to account</span>
+                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Priority Level</label>
-                <select 
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.priority}
-                  onChange={(e) => setFormData({...formData, priority: e.target.value})}
-                >
-                  <option value="LOW">Low (Routine)</option>
-                  <option value="MEDIUM">Medium (Priority)</option>
-                  <option value="HIGH">High (Critical)</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-400 uppercase ml-1">Priority</label>
+                  <select 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-blue-100 outline-none"
+                    value={formData.priority}
+                    onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-400 uppercase ml-1">Target</label>
+                  <select 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-blue-100 outline-none"
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  >
+                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                  </select>
+                </div>
               </div>
+
+              <div className="space-y-4 pt-4">
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Mail size={18}/></div>
+                    <div className="flex-grow"><p className="text-[9px] font-black text-slate-400 uppercase">Confirmation Email</p><p className="text-sm font-bold">{formData.buyer_email}</p></div>
+                 </div>
+                 <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Smartphone size={18}/></div>
+                    <div className="flex-grow"><p className="text-[9px] font-black text-slate-400 uppercase">Emergency Contact</p><p className="text-sm font-bold">{formData.buyer_phone}</p></div>
+                 </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white font-black py-6 rounded-[2rem] shadow-2xl shadow-blue-200 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em] hover:bg-slate-900 transition-all active:scale-95 mt-4"
+              >
+                {isSubmitting ? 'Syncing...' : <><Send size={20} /> Deploy Ticket</>}
+              </button>
             </div>
-
-            {/* Submit Button */}
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              className={`w-full ${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-slate-900'} text-white font-black py-4 rounded-2xl shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-[0.2em] mt-2 transition-all active:scale-95`}
-            >
-              {isSubmitting ? 'Dispatching...' : <><Send size={18} /> Submit Ticket</>}
-            </button>
           </form>
         )}
       </div>
