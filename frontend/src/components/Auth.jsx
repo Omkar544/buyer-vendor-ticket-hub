@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { User, Mail, Lock, LogIn, ShieldCheck, ArrowRight, Loader2, UserCog, Building2, Smartphone, ShieldAlert } from 'lucide-react';
+import { 
+  User, Mail, Lock, LogIn, ShieldCheck, ArrowRight, 
+  Loader2, UserCog, Building2, Smartphone, ShieldAlert, KeyRound, Eye, EyeOff 
+} from 'lucide-react';
 
 export default function Auth({ onAuthSuccess }) {
   const [mode, setMode] = useState('BUYER_LOGIN'); 
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // State to toggle visibility
   
   const [formData, setFormData] = useState({
     username: '',
@@ -55,7 +59,7 @@ export default function Auth({ onAuthSuccess }) {
       );
 
     } catch (err) {
-      alert(err.response?.data?.error || "Authentication failed");
+      alert(err.response?.data?.error || "Authentication failed. Secure pipeline blocked.");
     } finally {
       setLoading(false);
     }
@@ -65,125 +69,147 @@ export default function Auth({ onAuthSuccess }) {
   const isAdminMode = mode.startsWith('ADMIN');
   const isRegistering = mode.endsWith('REGISTER');
 
-  const getHeaderStyle = () => {
-    if (isAdminMode) return 'bg-red-600';
-    if (isVendorMode) return 'bg-slate-900';
-    return 'bg-blue-600';
-  };
+  const theme = isAdminMode ? 'red' : isVendorMode ? 'slate' : 'blue';
 
   return (
-    <div className="w-[95%] sm:w-full max-w-md mx-auto my-8 bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
-      
-      {/* HEADER SECTION */}
-      <div className={`${getHeaderStyle()} p-8 text-center text-white transition-colors duration-500`}>
-        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-          {isAdminMode ? <ShieldAlert size={32} /> : isVendorMode ? <UserCog size={32} /> : <LogIn size={32} />}
-        </div>
-        <h2 className="text-2xl font-black uppercase tracking-tight">
-          {isAdminMode ? 'System Admin' : mode.replace('_', ' ')}
-        </h2>
-        <p className="text-white/70 text-[10px] font-bold mt-2 uppercase tracking-[0.2em]">
-          {isAdminMode ? 'Global Command Center' : isVendorMode ? 'Vendor Management Portal' : 'Buyer Support Access'}
-        </p>
-      </div>
-
-      {/* ROLE SELECTOR TABS */}
-      {!isRegistering && (
-        <div className="flex border-b bg-slate-50/50">
-          <button type="button" onClick={() => setMode('BUYER_LOGIN')}
-          className={`flex-1 py-4 text-[10px] font-black uppercase transition-all ${mode.startsWith('BUYER') ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-400 hover:text-slate-600'}`}>
-            Buyer
-          </button>
-          <button type="button" onClick={() => setMode('VENDOR_LOGIN')}
-          className={`flex-1 py-4 text-[10px] font-black uppercase transition-all ${mode.startsWith('VENDOR') ? 'text-slate-900 border-b-2 border-slate-900 bg-white' : 'text-slate-400 hover:text-slate-600'}`}>
-            Vendor
-          </button>
-          <button type="button" onClick={() => setMode('ADMIN_LOGIN')}
-          className={`flex-1 py-4 text-[10px] font-black uppercase transition-all ${mode.startsWith('ADMIN') ? 'text-red-600 border-b-2 border-red-600 bg-white' : 'text-slate-400 hover:text-slate-600'}`}>
-            Admin
-          </button>
-        </div>
-      )}
-
-      {/* FORM SECTION */}
-      <form onSubmit={handleSubmit} className="p-8 space-y-4">
+    <div className="w-full max-w-xl mx-auto my-12 animate-in fade-in zoom-in duration-700">
+      <div className="bg-white rounded-[4rem] border-2 border-slate-100 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] overflow-hidden">
         
-        {isRegistering && (
-          <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-            <div className="relative">
-              <User className="absolute left-4 top-3.5 text-slate-400" size={18} />
-              <input type="text" placeholder="Full Name" required
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              onChange={(e)=>setFormData({...formData,name:e.target.value})}/>
+        {/* HEADER SECTION */}
+        <div className={`relative p-12 text-center text-white overflow-hidden transition-all duration-500 ${
+          theme === 'red' ? 'bg-red-600' : theme === 'slate' ? 'bg-slate-900' : 'bg-blue-600'
+        }`}>
+          <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12">
+            <ShieldCheck size={180} />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl border border-white/30 transition-transform hover:scale-110">
+              {isAdminMode ? <ShieldAlert size={48} /> : isVendorMode ? <UserCog size={48} /> : <KeyRound size={48} />}
             </div>
+            <h2 className="text-4xl font-black uppercase tracking-tighter italic">
+              {isAdminMode ? 'System Admin' : mode.replace('_', ' ')}
+            </h2>
+            <p className="text-white/80 text-xs font-black mt-3 uppercase tracking-[0.4em]">
+              {isAdminMode ? 'Master Access' : isVendorMode ? 'Expert Interface' : 'Secure Entry'}
+            </p>
+          </div>
+        </div>
 
-            <div className="relative">
-              <Mail className="absolute left-4 top-3.5 text-slate-400" size={18} />
-              <input type="email" placeholder="Email Address" required
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              onChange={(e)=>setFormData({...formData,email:e.target.value})}/>
-            </div>
-
-            {mode === 'BUYER_REGISTER' && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <Smartphone className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                  <input type="text" placeholder="Phone" required
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"
-                  onChange={(e)=>setFormData({...formData,phone:e.target.value})}/>
-                </div>
-                <div className="relative">
-                  <Building2 className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                  <input type="text" placeholder="Company" defaultValue="YBL"
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"
-                  onChange={(e)=>setFormData({...formData,company:e.target.value})}/>
-                </div>
-              </div>
-            )}
+        {/* ROLE SELECTOR TABS */}
+        {!isRegistering && (
+          <div className="flex bg-slate-50/80 p-2 m-6 rounded-[2rem] border border-slate-100 shadow-inner">
+            <button type="button" onClick={() => setMode('BUYER_LOGIN')}
+              className={`flex-1 py-5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all ${mode.startsWith('BUYER') ? 'bg-white text-blue-600 shadow-xl scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}>
+              Buyer
+            </button>
+            <button type="button" onClick={() => setMode('VENDOR_LOGIN')}
+              className={`flex-1 py-5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all ${mode.startsWith('VENDOR') ? 'bg-white text-slate-900 shadow-xl scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}>
+              Vendor
+            </button>
+            <button type="button" onClick={() => setMode('ADMIN_LOGIN')}
+              className={`flex-1 py-5 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all ${mode.startsWith('ADMIN') ? 'bg-white text-red-600 shadow-xl scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}>
+              Admin
+            </button>
           </div>
         )}
 
-        <div className="relative">
-          <User className="absolute left-4 top-3.5 text-slate-400" size={18} />
-          <input type="text" placeholder="Username" required
-          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-          onChange={(e)=>setFormData({...formData,username:e.target.value})}/>
-        </div>
-
-        <div className="relative">
-          <Lock className="absolute left-4 top-3.5 text-slate-400" size={18} />
-          <input type="password" placeholder="Password" required
-          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-          onChange={(e)=>setFormData({...formData,password:e.target.value})}/>
-        </div>
-
-        <button type="submit" disabled={loading}
-        className={`w-full ${isAdminMode ? 'bg-red-600' : isVendorMode ? 'bg-slate-900' : 'bg-blue-600'} text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all`}>
-          {loading ? <Loader2 className="animate-spin" size={16}/> : <>{isRegistering ? 'Create Account' : 'Secure Sign In'} <ArrowRight size={16}/></>}
-        </button>
-
-        {/* REGISTRATION TOGGLE LINKS */}
-        <div className="pt-4 text-center">
-          {mode === 'BUYER_LOGIN' && (
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              First time here? <button type="button" onClick={() => setMode('BUYER_REGISTER')} className="text-blue-600 hover:underline">Register Now</button>
-            </p>
-          )}
-          {mode === 'VENDOR_LOGIN' && (
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              New Agent? <button type="button" onClick={() => setMode('VENDOR_REGISTER')} className="text-slate-900 hover:underline">Apply Here</button>
-            </p>
-          )}
+        <form onSubmit={handleSubmit} className="p-12 pt-4 space-y-6">
+          
           {isRegistering && (
-            <button type="button" onClick={() => setMode(isVendorMode ? 'VENDOR_LOGIN' : 'BUYER_LOGIN')} className="text-[10px] font-bold text-slate-400 uppercase hover:text-slate-600 transition-colors">
-              Already have an account? Sign In
-            </button>
-          )}
-        </div>
-      </form>
+            <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="relative">
+                  <User className="absolute left-6 top-6 text-slate-400" size={24} />
+                  <input type="text" placeholder="Full Name" required
+                    className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                    onChange={(e)=>setFormData({...formData,name:e.target.value})}/>
+                </div>
+                <div className="relative">
+                  <Mail className="absolute left-6 top-6 text-slate-400" size={24} />
+                  <input type="email" placeholder="Email" required
+                    className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                    onChange={(e)=>setFormData({...formData,email:e.target.value})}/>
+                </div>
+              </div>
 
-      <div className="p-4 bg-slate-50 border-t text-center text-[9px] font-black text-slate-400 uppercase flex items-center justify-center gap-2 tracking-[0.2em]">
-        <ShieldCheck size={12}/> Role Based PostgreSQL Authentication
+              {mode === 'BUYER_REGISTER' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="relative">
+                    <Smartphone className="absolute left-6 top-6 text-slate-400" size={24} />
+                    <input type="text" placeholder="Phone" required
+                      className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-slate-300"
+                      onChange={(e)=>setFormData({...formData,phone:e.target.value})}/>
+                  </div>
+                  <div className="relative">
+                    <Building2 className="absolute left-6 top-6 text-slate-400" size={24} />
+                    <input type="text" placeholder="Company" defaultValue="YBL"
+                      className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-slate-300"
+                      onChange={(e)=>setFormData({...formData,company:e.target.value})}/>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-6">
+            <div className="relative">
+              <User className="absolute left-6 top-6 text-slate-400" size={24} />
+              <input type="text" placeholder="Username" required
+                className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-slate-100 outline-none transition-all placeholder:text-slate-300"
+                onChange={(e)=>setFormData({...formData,username:e.target.value})}/>
+            </div>
+
+            {/* PASSWORD FIELD WITH VISIBILITY TOGGLE */}
+            <div className="relative group">
+              <Lock className="absolute left-6 top-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={24} />
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Password" 
+                required
+                className="w-full pl-16 pr-16 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-slate-100 outline-none transition-all placeholder:text-slate-300"
+                onChange={(e)=>setFormData({...formData,password:e.target.value})}/>
+              
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-6 top-6 p-1 text-slate-400 hover:text-slate-600 transition-all active:scale-90"
+              >
+                {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading}
+            className={`w-full py-8 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-4 shadow-2xl active:scale-95 transition-all text-white border-b-8 ${
+              theme === 'red' ? 'bg-red-600 border-red-800' : theme === 'slate' ? 'bg-slate-900 border-slate-700' : 'bg-blue-600 border-blue-800'
+            }`}>
+            {loading ? <Loader2 className="animate-spin" size={28}/> : <>{isRegistering ? 'Initialize Account' : 'Authenticate Access'} <ArrowRight size={24}/></>}
+          </button>
+
+          {/* TOGGLE LINKS */}
+          <div className="pt-6 text-center space-y-4">
+            {mode === 'BUYER_LOGIN' && (
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                New User? <button type="button" onClick={() => setMode('BUYER_REGISTER')} className="text-blue-600 hover:underline">Register Pipeline</button>
+              </p>
+            )}
+            {mode === 'VENDOR_LOGIN' && (
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                New Agent? <button type="button" onClick={() => setMode('VENDOR_REGISTER')} className="text-slate-900 hover:underline">Apply Deployment</button>
+              </p>
+            )}
+            {isRegistering && (
+              <button type="button" onClick={() => setMode(isVendorMode ? 'VENDOR_LOGIN' : 'BUYER_LOGIN')} className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">
+                Existing Profile? Return to Authentication
+              </button>
+            )}
+          </div>
+        </form>
+
+        <div className="p-8 bg-slate-50 border-t-2 border-slate-100 text-center text-[10px] font-black text-slate-400 uppercase flex items-center justify-center gap-4 tracking-[0.3em]">
+          <ShieldCheck size={16} className="text-emerald-500" /> PostgreSQL Role-Based Authorization Active
+        </div>
       </div>
     </div>
   );

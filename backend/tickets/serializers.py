@@ -11,7 +11,7 @@ class TicketSerializer(serializers.ModelSerializer):
     buyer_username = serializers.ReadOnlyField(source='buyer_user.username')
     vendor_name = serializers.SerializerMethodField()
 
-    # 3. Formatted Date/Time Fields (Matches your "Expert" Dashboard look)
+    # 3. Formatted Date/Time Fields
     created_at_display = serializers.DateTimeField(
         format="%d %b %Y, %I:%M %p", source='created_at', read_only=True
     )
@@ -43,8 +43,8 @@ class TicketSerializer(serializers.ModelSerializer):
             'due_date', 
             'resolved_at', 
             'created_at',
-            'created_at_display',   # Added for frontend convenience
-            'resolved_at_display'   # Added for frontend convenience
+            'created_at_display',
+            'resolved_at_display'
         ]
         read_only_fields = [
             'buyer_user', 
@@ -56,16 +56,20 @@ class TicketSerializer(serializers.ModelSerializer):
 
     def get_vendor_name(self, obj):
         """
-        Fetches the Vendor's name through the Ticket -> Category -> Vendor link.
+        FIXED: Pulls the name directly from the assigned_vendor field 
+        defined in your models.py.
         """
         try:
-            if obj.category and obj.category.vendor:
-                vendor = obj.category.vendor
-                # Prioritize 'First Last', fallback to 'Username'
-                full_name = f"{vendor.first_name} {vendor.last_name}".strip()
-                return full_name if full_name else vendor.username
+            # Check the assigned_vendor field on the Ticket instance
+            if obj.assigned_vendor:
+                v = obj.assigned_vendor
+                full_name = f"{v.first_name} {v.last_name}".strip()
+                return full_name if full_name else v.username
             
-            # Fallback to Category Name if no user is linked yet
-            return f"{obj.category.name} Agent" if obj.category else "Unassigned"
+            # Fallback to the Category name if no specific person is assigned
+            if obj.category:
+                return f"{obj.category.name} Agent"
+                
+            return "Support Team"
         except Exception:
             return "Pending Assignment"

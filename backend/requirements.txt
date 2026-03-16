@@ -1,6 +1,0 @@
-django 
-django-crispy-forms 
-crispy-tailwind 
-huggingface_hub 
-python-dotenv 
-pillow 

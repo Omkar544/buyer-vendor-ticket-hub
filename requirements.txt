@@ -1,0 +1,46 @@
+# --- Core Framework ---
+django>=5.0
+djangorestframework
+django-cors-headers
+
+# --- UI & Forms ---
+django-crispy-forms
+crispy-tailwind
+
+# --- AI & Integration ---
+huggingface_hub
+python-dotenv
+
+# --- Image & File Handling ---
+pillow
+
+# --- Database & Server ---
+psycopg2-binary        # For PostgreSQL v16 Engine
+gunicorn               # For Production deployment
+
+# --- Analytics Engine ---
+matplotlib
+seaborn
+pandas
+
+
+Frontend
+
+# --- Core Engine ---
+react
+react-dom
+vite (Build Tool)
+
+# --- Communication ---
+axios                  # API requests to Django
+
+# --- Styling & Massive UI ---
+tailwindcss            # Utility-first CSS
+autoprefixer
+postcss
+
+# --- Design & Animation ---
+lucide-react           # Massive Iconography set
+clsx                   # Dynamic class management
+tailwind-merge         # Style conflict resolution
+tailwindcss-animate    # Dash-board entry animations

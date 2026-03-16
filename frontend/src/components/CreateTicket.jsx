@@ -1,225 +1,217 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Send, X, PlusCircle, UserCheck, Smartphone, Mail, CheckCircle2, 
-  Upload, FileText, Paperclip, AlertCircle, Building2, User 
+  Send, X, UserCheck, Smartphone, Mail, CheckCircle2, 
+  Upload, FileText, AlertCircle, Building2, User, ShieldCheck, Loader2, Info, Activity
 } from 'lucide-react';
 
 export default function CreateTicket({ onTicketAdded }) {
-  const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [categories, setCategories] = useState([]);
   
-  const savedUsername = localStorage.getItem('username') || 'Guest';
-
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: '', 
     priority: 'LOW',
-    company: localStorage.getItem('company') || 'YBL',
-    buyer_name: localStorage.getItem('name') || savedUsername,
-    buyer_email: localStorage.getItem('email') || '', 
-    buyer_phone: localStorage.getItem('phone') || ''
+    company: '',
+    buyer_name: '',
+    buyer_email: '', 
+    buyer_phone: ''
   });
 
   useEffect(() => {
-    if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        buyer_email: localStorage.getItem('email') || prev.buyer_email,
-        buyer_phone: localStorage.getItem('phone') || prev.buyer_phone,
-        company: localStorage.getItem('company') || prev.company,
-        buyer_name: localStorage.getItem('name') || prev.buyer_name,
-      }));
-
-      const fetchCategories = async () => {
-        try {
-          const response = await axios.get('http://127.0.0.1:8000/api/get-categories/');
-          setCategories(response.data);
-          if (response.data.length > 0) {
-            setFormData(prev => ({ ...prev, category: response.data[0].id }));
-          }
-        } catch (err) {
-          console.error("Failed to load agents:", err);
+    // 1. Initial Load of Category Data
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/api/get-categories/');
+        setCategories(response.data);
+        if (response.data.length > 0) {
+          setFormData(prev => ({ ...prev, category: response.data[0].id }));
         }
-      };
-      fetchCategories();
-    }
-  }, [isOpen]);
+      } catch (err) {
+        console.error("Failed to load pipeline categories:", err);
+      }
+    };
+
+    // 2. Initial Sync of Profile Data
+    setFormData(prev => ({
+      ...prev,
+      buyer_email: localStorage.getItem('email') || '',
+      buyer_phone: localStorage.getItem('phone') || '',
+      company: localStorage.getItem('company') || 'YBL',
+      buyer_name: localStorage.getItem('name') || localStorage.getItem('username') || 'Guest',
+    }));
+
+    fetchCategories();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    if (!token) return alert("Session expired.");
+    
+    // CRITICAL SAFETY CHECK: Grab fresh values directly from localStorage to prevent "Blank Field" errors
+    const email = formData.buyer_email || localStorage.getItem('email');
+    const name = formData.buyer_name || localStorage.getItem('name') || localStorage.getItem('username');
+    const company = formData.company || localStorage.getItem('company') || 'YBL';
+
+    if (!email) {
+      return alert("Authentication Error: Your email was not found. Please log out and log back in.");
+    }
+
+    if (!formData.category) {
+      return alert("Validation Error: Please select a target Team.");
+    }
 
     setIsSubmitting(true);
     const uploadData = new FormData();
-    Object.keys(formData).forEach(key => uploadData.append(key, formData[key]));
+    
+    // Manual append to ensure "Locked" fields are definitely populated
+    uploadData.append('title', formData.title);
+    uploadData.append('description', formData.description);
+    uploadData.append('category', formData.category);
+    uploadData.append('priority', formData.priority);
+    
+    // These fields are required by your Serializer
+    uploadData.append('buyer_email', email);
+    uploadData.append('buyer_name', name);
+    uploadData.append('company', company);
+    uploadData.append('buyer_phone', formData.buyer_phone || localStorage.getItem('phone') || '');
+    
     if (selectedFile) uploadData.append('issue_proof', selectedFile);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/tickets/', uploadData, {
+      await axios.post('http://127.0.0.1:8000/api/tickets/', uploadData, {
         headers: { 
           'Authorization': `Token ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      if (response.status === 201 || response.status === 200) {
-        setIsSuccess(true);
-        setTimeout(() => {
-          setIsOpen(false);
-          setIsSuccess(false);
-          setSelectedFile(null);
-          setFormData(prev => ({...prev, title: '', description: ''}));
-          onTicketAdded();
-        }, 1800);
-      }
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        onTicketAdded(); 
+      }, 2000);
     } catch (err) {
-      alert("Submission failed.");
+      console.error("DJANGO REJECTION:", err.response?.data);
+      alert(`Submission failed: ${JSON.stringify(err.response?.data)}`);
     } finally {
-      if (!isSuccess) setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (!isOpen) return (
-    <button onClick={() => setIsOpen(true)} className="fixed bottom-10 right-10 bg-blue-600 text-white p-6 rounded-[2rem] shadow-2xl hover:scale-110 hover:bg-slate-900 transition-all z-40 group flex items-center gap-3">
-      <PlusCircle size={28} strokeWidth={2.5}/>
-      <span className="font-black uppercase text-xs tracking-widest hidden group-hover:block transition-all duration-300">New Request</span>
-    </button>
-  );
+  if (isSuccess) {
+    return (
+      <div className="w-full max-w-4xl bg-white rounded-[4rem] p-40 shadow-2xl border-4 border-emerald-500 text-center space-y-8 animate-in zoom-in">
+        <div className="bg-emerald-500 w-32 h-32 rounded-[3rem] flex items-center justify-center mx-auto text-white shadow-2xl">
+          <CheckCircle2 size={80} />
+        </div>
+        <div className="space-y-4">
+          <h3 className="text-6xl font-black text-slate-900 tracking-tighter uppercase italic">SYNCED</h3>
+          <p className="text-slate-400 font-black uppercase text-sm tracking-[0.5em]">Ticket Dispatched to Master Pipeline</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-[3rem] w-full max-w-4xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-300">
-        
-        {/* Header */}
-        <div className="bg-white px-10 py-8 border-b border-slate-100 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="bg-blue-600 p-3 rounded-2xl text-white shadow-lg shadow-blue-100">
-               <UserCheck size={24} />
-            </div>
-            <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Dispatch Request</h2>
-              <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Enterprise Routing Engine v3.0</p>
-            </div>
+    <div className="w-full max-w-6xl bg-white rounded-[4rem] shadow-2xl border-2 border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-10">
+      
+      <div className="bg-blue-600 p-16 text-white relative">
+        <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12"><Activity size={200}/></div>
+        <div className="relative z-10 flex items-center gap-8">
+          <div className="bg-white/20 p-6 rounded-[2rem] backdrop-blur-xl border border-white/30">
+            <ShieldCheck size={48} />
           </div>
-          <button onClick={() => setIsOpen(false)} className="bg-slate-100 p-3 rounded-2xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"><X size={20}/></button>
+          <div>
+            <h2 className="text-6xl font-black tracking-tighter uppercase italic">Dispatch Request</h2>
+            <p className="text-xs font-black uppercase tracking-[0.6em] opacity-80 mt-2">Enterprise Master Engine v3.0 // Secure Link</p>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-16 grid grid-cols-1 lg:grid-cols-2 gap-20">
+        
+        <div className="space-y-12">
+          <div className="space-y-4">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.4em] ml-4 flex items-center gap-3">
+              <FileText size={18} className="text-blue-600"/> Ticket Subject
+            </label>
+            <input 
+              type="text" required
+              className="w-full p-8 bg-slate-50 border-4 border-slate-50 rounded-[2.5rem] outline-none focus:ring-8 focus:ring-blue-50 font-black text-2xl text-slate-800 transition-all placeholder:text-slate-300"
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-[0.4em] ml-4 flex items-center gap-3">
+              <Info size={18} className="text-blue-600"/> Documentation
+            </label>
+            <textarea 
+              required
+              className="w-full p-8 bg-slate-50 border-4 border-slate-50 rounded-[2.5rem] h-80 outline-none focus:ring-8 focus:ring-blue-50 text-xl font-bold leading-relaxed resize-none"
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+            />
+          </div>
         </div>
 
-        {isSuccess ? (
-          <div className="p-32 flex flex-col items-center justify-center text-center space-y-6 animate-in zoom-in">
-            <div className="bg-emerald-500 p-6 rounded-[2.5rem] text-white shadow-2xl shadow-emerald-100">
-              <CheckCircle2 size={80} />
+        <div className="space-y-12">
+          <div className="bg-slate-900 text-white p-12 rounded-[3.5rem] space-y-8 shadow-2xl border-b-8 border-slate-800">
+             <h4 className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-400 border-l-4 border-blue-400 pl-4">Locked Identity</h4>
+             <div className="space-y-6">
+                <div className="flex items-center gap-5 text-2xl font-black"><User size={32} className="text-blue-500"/> {formData.buyer_name}</div>
+                <div className="flex items-center gap-5 text-xl font-black text-slate-400 truncate"><Mail size={24} className="text-blue-500"/> {formData.buyer_email}</div>
+             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <label className="text-xs font-black text-slate-400 uppercase ml-4 tracking-widest">SLA Priority</label>
+              <select 
+                className="w-full p-6 bg-slate-50 border-4 border-slate-50 rounded-[2rem] text-sm font-black uppercase tracking-[0.2em] focus:ring-8 focus:ring-blue-50 outline-none cursor-pointer"
+                value={formData.priority}
+                onChange={(e) => setFormData({...formData, priority: e.target.value})}
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </select>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Synchronized!</h3>
-              <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Agent notified via secure pipeline.</p>
+            <div className="space-y-4">
+              <label className="text-xs font-black text-slate-400 uppercase ml-4 tracking-widest">Target Team</label>
+              <select 
+                className="w-full p-6 bg-slate-50 border-4 border-slate-50 rounded-[2rem] text-sm font-black uppercase tracking-[0.2em] focus:ring-8 focus:ring-blue-50 outline-none cursor-pointer"
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: parseInt(e.target.value)})}
+              >
+                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+              </select>
             </div>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-10 grid grid-cols-1 lg:grid-cols-2 gap-10 max-h-[80vh] overflow-y-auto">
-            
-            {/* LEFT COLUMN: Issue Data */}
-            <div className="space-y-6">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
-                <input 
-                  type="text" placeholder="Issue title..." required
-                  className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-blue-100 font-bold text-slate-800 transition-all"
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                />
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Documentation</label>
-                <textarea 
-                  placeholder="Provide technical context..." required
-                  className="w-full p-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] h-48 outline-none focus:ring-4 focus:ring-blue-100 text-sm leading-relaxed transition-all resize-none"
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Attachment</label>
-                <div className="relative group">
-                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => setSelectedFile(e.target.files[0])} />
-                  <div className={`p-5 rounded-[1.5rem] border-2 border-dashed flex items-center gap-4 transition-all ${selectedFile ? 'bg-blue-50 border-blue-400' : 'bg-slate-50 border-slate-200 group-hover:border-blue-300'}`}>
-                    <div className={`${selectedFile ? 'bg-blue-600' : 'bg-slate-200'} p-3 rounded-xl text-white transition-colors`}>
-                       {selectedFile ? <FileText size={20}/> : <Upload size={20}/>}
-                    </div>
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-500 truncate">
-                      {selectedFile ? selectedFile.name : 'Upload Proof (PNG/JPG)'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+          <div className="relative group">
+            <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => setSelectedFile(e.target.files[0])} />
+            <div className={`p-10 rounded-[3rem] border-4 border-dashed flex items-center gap-8 transition-all ${selectedFile ? 'bg-blue-50 border-blue-400' : 'bg-slate-50 border-slate-200 group-hover:border-blue-300'}`}>
+              <Upload size={40} className={selectedFile ? 'text-blue-600' : 'text-slate-300'}/>
+              <span className="text-lg font-black uppercase tracking-widest text-slate-500 truncate">
+                {selectedFile ? selectedFile.name : 'Attach Proof'}
+              </span>
             </div>
+          </div>
 
-            {/* RIGHT COLUMN: Metadata & Config */}
-            <div className="space-y-6">
-              <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] space-y-4 shadow-xl">
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">Authenticated Identity</h4>
-                 <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm font-bold"><User size={18} className="text-blue-500"/> {formData.buyer_name}</div>
-                    <div className="flex items-center gap-3 text-sm font-bold"><Building2 size={18} className="text-blue-500"/> {formData.company}</div>
-                 </div>
-                 <div className="pt-4 border-t border-white/10 flex items-center gap-2 text-blue-400">
-                    <AlertCircle size={14}/>
-                    <span className="text-[9px] font-black uppercase tracking-widest">Metadata Locked to account</span>
-                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 uppercase ml-1">Priority</label>
-                  <select 
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-blue-100 outline-none"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({...formData, priority: e.target.value})}
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 uppercase ml-1">Target</label>
-                  <select 
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-blue-100 outline-none"
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  >
-                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4">
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Mail size={18}/></div>
-                    <div className="flex-grow"><p className="text-[9px] font-black text-slate-400 uppercase">Confirmation Email</p><p className="text-sm font-bold">{formData.buyer_email}</p></div>
-                 </div>
-                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><Smartphone size={18}/></div>
-                    <div className="flex-grow"><p className="text-[9px] font-black text-slate-400 uppercase">Emergency Contact</p><p className="text-sm font-bold">{formData.buyer_phone}</p></div>
-                 </div>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white font-black py-6 rounded-[2rem] shadow-2xl shadow-blue-200 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em] hover:bg-slate-900 transition-all active:scale-95 mt-4"
-              >
-                {isSubmitting ? 'Syncing...' : <><Send size={20} /> Deploy Ticket</>}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
+          <button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="w-full bg-blue-600 text-white font-black py-10 rounded-[3rem] shadow-2xl flex items-center justify-center gap-6 uppercase text-xl tracking-[0.4em] hover:bg-slate-900 transition-all active:scale-95 border-b-8 border-blue-800"
+          >
+            {isSubmitting ? <Loader2 className="animate-spin" size={40} /> : <><Send size={40} /> Deploy Request</>}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
