@@ -13,5 +13,19 @@ By moving away from fragmented communication, this system provides a single sour
 ## 🛠️ Tech Stack
 * **Backend:** Python 3.x, Django 6.0, Django REST Framework.
 * **Frontend:** React (SPA), Tailwind CSS.
-* **Database:** SQLite (Development) / PostgreSQL (Production ready).
-* **AI Integration:** Hugging Face API for automated ticket categorization (In Progress).
+* **Database:** SQLite (Development) / PostgreSQL (Production ready).🛠️ Installation & Setup
+Backend (Django)
+Navigate to the /backend directory.
+
+Install dependencies: pip install -r requirements.txt.
+
+Apply migrations: python manage.py migrate.
+
+Start the server: python manage.py runserver.
+
+Frontend (React + Vite)
+Navigate to the /frontend directory.
+
+Install dependencies: npm install.
+
+Start the dev server: npm run dev.
