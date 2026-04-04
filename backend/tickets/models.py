@@ -8,7 +8,7 @@ from datetime import timedelta
 
 class TicketCategory(models.Model):
     name = models.CharField(max_length=100, unique=True) # e.g., TECHNICAL, LOGISTICS
-    created_at = models.DateTimeField(auto_now_add=True)
+    
 
     def __str__(self):
         return self.name
@@ -18,7 +18,7 @@ class VendorProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='vendor_profile')
     # Linked to the dynamic category
     category = models.ForeignKey(TicketCategory, on_delete=models.CASCADE, related_name='vendors')
-
+    
     def __str__(self):
         return f"{self.user.username} ({self.category.name} Team)"
 

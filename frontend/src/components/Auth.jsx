@@ -8,13 +8,14 @@ import {
 export default function Auth({ onAuthSuccess }) {
   const [mode, setMode] = useState('BUYER_LOGIN'); 
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State to toggle visibility
+  const [showPassword, setShowPassword] = useState(false); 
   
   const [formData, setFormData] = useState({
     username: '',
     password: '',
     email: '',
-    name: '',
+    name: '',    // Used for First Name
+    surname: '', // ADDED: For Surname UI
     phone: '',
     company: 'YBL',
     department_name: '' 
@@ -25,6 +26,10 @@ export default function Auth({ onAuthSuccess }) {
     setLoading(true);
     
     let endpoint = '';
+    
+    // COMBINE NAME AND SURNAME FOR BACKEND COMPATIBILITY
+    const combinedFullName = `${formData.name} ${formData.surname}`.trim();
+    
     let payload = { username: formData.username, password: formData.password };
 
     if (mode.includes('LOGIN')) {
@@ -32,11 +37,22 @@ export default function Auth({ onAuthSuccess }) {
     } 
     else if (mode === 'BUYER_REGISTER') {
       endpoint = 'auth/register';
-      payload = { ...payload, email: formData.email, name: formData.name, phone: formData.phone, company: formData.company };
+      payload = { 
+        ...payload, 
+        email: formData.email, 
+        name: combinedFullName, // Sends combined string to your existing 'name' field
+        phone: formData.phone, 
+        company: formData.company 
+      };
     } 
     else if (mode === 'VENDOR_REGISTER') {
       endpoint = 'auth/register-vendor';
-      payload = { ...payload, email: formData.email, department_name: formData.department_name };
+      payload = { 
+        ...payload, 
+        email: formData.email, 
+        name: combinedFullName, // Sends combined string to your existing 'name' field
+        department_name: formData.department_name 
+      };
     }
 
     try {
@@ -118,19 +134,27 @@ export default function Auth({ onAuthSuccess }) {
           
           {isRegistering && (
             <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+              {/* UPDATED: NAME & SURNAME ROW */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="relative">
                   <User className="absolute left-6 top-6 text-slate-400" size={24} />
-                  <input type="text" placeholder="Full Name" required
+                  <input type="text" placeholder="First Name" required
                     className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
-                    onChange={(e)=>setFormData({...formData,name:e.target.value})}/>
+                    onChange={(e)=>setFormData({...formData, name:e.target.value})}/>
                 </div>
                 <div className="relative">
-                  <Mail className="absolute left-6 top-6 text-slate-400" size={24} />
-                  <input type="email" placeholder="Email" required
+                  <User className="absolute left-6 top-6 text-slate-400" size={24} />
+                  <input type="text" placeholder="Surname" required
                     className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
-                    onChange={(e)=>setFormData({...formData,email:e.target.value})}/>
+                    onChange={(e)=>setFormData({...formData, surname:e.target.value})}/>
                 </div>
+              </div>
+
+              <div className="relative">
+                <Mail className="absolute left-6 top-6 text-slate-400" size={24} />
+                <input type="email" placeholder="Email" required
+                  className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                  onChange={(e)=>setFormData({...formData, email:e.target.value})}/>
               </div>
 
               {mode === 'BUYER_REGISTER' && (
@@ -139,13 +163,13 @@ export default function Auth({ onAuthSuccess }) {
                     <Smartphone className="absolute left-6 top-6 text-slate-400" size={24} />
                     <input type="text" placeholder="Phone" required
                       className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-slate-300"
-                      onChange={(e)=>setFormData({...formData,phone:e.target.value})}/>
+                      onChange={(e)=>setFormData({...formData, phone:e.target.value})}/>
                   </div>
                   <div className="relative">
                     <Building2 className="absolute left-6 top-6 text-slate-400" size={24} />
                     <input type="text" placeholder="Company" defaultValue="YBL"
                       className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-blue-500 focus:border-blue-500 outline-none placeholder:text-slate-300"
-                      onChange={(e)=>setFormData({...formData,company:e.target.value})}/>
+                      onChange={(e)=>setFormData({...formData, company:e.target.value})}/>
                   </div>
                 </div>
               )}
@@ -157,10 +181,9 @@ export default function Auth({ onAuthSuccess }) {
               <User className="absolute left-6 top-6 text-slate-400" size={24} />
               <input type="text" placeholder="Username" required
                 className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-slate-100 outline-none transition-all placeholder:text-slate-300"
-                onChange={(e)=>setFormData({...formData,username:e.target.value})}/>
+                onChange={(e)=>setFormData({...formData, username:e.target.value})}/>
             </div>
 
-            {/* PASSWORD FIELD WITH VISIBILITY TOGGLE */}
             <div className="relative group">
               <Lock className="absolute left-6 top-6 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={24} />
               <input 
@@ -168,7 +191,7 @@ export default function Auth({ onAuthSuccess }) {
                 placeholder="Password" 
                 required
                 className="w-full pl-16 pr-16 py-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] text-lg font-bold focus:ring-8 focus:ring-slate-100 outline-none transition-all placeholder:text-slate-300"
-                onChange={(e)=>setFormData({...formData,password:e.target.value})}/>
+                onChange={(e)=>setFormData({...formData, password:e.target.value})}/>
               
               <button 
                 type="button"
@@ -187,7 +210,6 @@ export default function Auth({ onAuthSuccess }) {
             {loading ? <Loader2 className="animate-spin" size={28}/> : <>{isRegistering ? 'Initialize Account' : 'Authenticate Access'} <ArrowRight size={24}/></>}
           </button>
 
-          {/* TOGGLE LINKS */}
           <div className="pt-6 text-center space-y-4">
             {mode === 'BUYER_LOGIN' && (
               <p className="text-xs font-black text-slate-400 uppercase tracking-widest">

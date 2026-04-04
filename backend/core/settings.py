@@ -102,6 +102,11 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# --- TIMEZONE CONFIGURATION (Fix for IST Timing) ---
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'Asia/Kolkata' 
+USE_I18N = True
+USE_TZ = False
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -110,7 +115,7 @@ REST_FRAMEWORK = {
 }
 
 LOGIN_URL = 'login' 
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = 'login'
 
 CORS_ALLOW_ALL_ORIGINS = True
